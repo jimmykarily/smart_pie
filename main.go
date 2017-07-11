@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"os"
 	"time"
@@ -16,18 +14,6 @@ func SetupVars() error {
 	}
 
 	return nil
-}
-
-func GetRouter() *httprouter.Router {
-	r := httprouter.New()
-	r.GET("/", HomeHandler)
-	r.GET("/switches", SwitchesIndexHandler)
-	//r.POST("/switches", SwitchesCreateHandler)
-	//r.GET("/switches/:id", SwitchesShowHandler)
-	//r.PUT("/switches/:id", SwitchUpdateHandler)
-	//r.GET("/switches/:id/edit", SwitchEditHandler)
-
-	return r
 }
 
 func main() {
@@ -61,16 +47,7 @@ func main() {
 func StartServer(logger Logger, errChannel chan error) {
 	router := GetRouter()
 	logger.Log("Listening on port " + port)
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	if err := http.ListenAndServe(":"+port, router); err != nil {
 		errChannel <- err
 	}
-}
-
-func HomeHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	fmt.Fprintln(rw, "Home")
-}
-
-func SwitchesIndexHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	text := []byte("Hello")
-	rw.Write(text)
 }
