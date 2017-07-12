@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"time"
 )
@@ -16,11 +15,8 @@ func (l Logger) Write(p []byte) (n int, err error) {
 	now := time.Now().UTC()
 
 	// TODO: ljust
-	prefix := now.Format(
-		"[15:04:05 Mon 02 Jan UTC]") +
-		"[" + l.prefix + "]"
-
-	prefix = fmt.Sprintf("%-40s ", prefix)
+	prefix := "[" + l.prefix + "] " +
+		now.Format("[15:04:05 Mon 02 Jan UTC] ")
 
 	//TODO Do we need the equivalent of STDOUT.flush in ruby here?
 	return l.writer.Write([]byte(prefix + string(p) + "\n"))

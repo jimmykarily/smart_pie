@@ -8,6 +8,10 @@ import (
 var port = os.Getenv("SMART_PIE_PORT")
 var logger = Logger{"Main", os.Stdout}
 
+// If something is written in the errChannel, the program prints the error and
+// exits.
+var errChannel = make(chan error)
+
 func SetupVars() error {
 	if port == "" {
 		port = "8080"
@@ -22,10 +26,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// If something is written in the errChannel, the program prints the error
-	// and exits.
-	errChannel := make(chan error)
-
 	// The web server
 	go StartServer(Logger{"Server", os.Stdout}, errChannel)
 
@@ -39,7 +39,7 @@ func main() {
 }
 
 func StartServer(logger Logger, errChannel chan error) {
-	router := GetRouter(&logger)
+	router := GetRouter()
 	logger.Log("Listening on port " + port)
 	if err := http.ListenAndServe(":"+port, router); err != nil {
 		errChannel <- err

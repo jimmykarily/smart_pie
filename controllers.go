@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"github.com/codegangsta/negroni"
 	"github.com/julienschmidt/httprouter"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -19,7 +20,7 @@ func (l LoggingRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	l.handler.ServeHTTP(w, r)
 }
 
-func GetRouter(logger *Logger) LoggingRouter {
+func GetRouter() *negroni.Negroni {
 	r := httprouter.New()
 	r.GET("/", HomeHandler)
 	r.GET("/switches", SwitchesIndexHandler)
@@ -28,11 +29,21 @@ func GetRouter(logger *Logger) LoggingRouter {
 	//r.PUT("/switches/:id", SwitchUpdateHandler)
 	//r.GET("/switches/:id/edit", SwitchEditHandler)
 
-	return LoggingRouter{r, *logger}
+	negroniLogger := negroni.NewLogger()
+	negroniLogger.SetDateFormat("[15:04:05 Mon 02 Jan UTC]")
+	n := negroni.New(negroniLogger, negroni.NewStatic(http.Dir("public")))
+	n.UseHandler(r)
+
+	return n
 }
 
 func HomeHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	fmt.Fprintln(rw, "Home")
+	var dat []byte
+	dat, err := ioutil.ReadFile("public/index.html")
+	if err != nil {
+		errChannel <- err
+	}
+	rw.Write(dat)
 }
 
 func SwitchesIndexHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
