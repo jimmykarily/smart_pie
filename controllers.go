@@ -6,7 +6,20 @@ import (
 	"net/http"
 )
 
-func GetRouter() *httprouter.Router {
+// This struct implements http.Handler but also prints the requests
+// in stdout.
+type LoggingRouter struct {
+	handler http.Handler
+	logger  Logger
+}
+
+func (l LoggingRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	//TODO: Log based on logging level env var
+	l.logger.Log(r.Method + " " + r.URL.Path)
+	l.handler.ServeHTTP(w, r)
+}
+
+func GetRouter(logger *Logger) LoggingRouter {
 	r := httprouter.New()
 	r.GET("/", HomeHandler)
 	r.GET("/switches", SwitchesIndexHandler)
@@ -15,7 +28,7 @@ func GetRouter() *httprouter.Router {
 	//r.PUT("/switches/:id", SwitchUpdateHandler)
 	//r.GET("/switches/:id/edit", SwitchEditHandler)
 
-	return r
+	return LoggingRouter{r, *logger}
 }
 
 func HomeHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
