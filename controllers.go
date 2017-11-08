@@ -3,9 +3,21 @@ package main
 import (
 	"github.com/codegangsta/negroni"
 	"github.com/julienschmidt/httprouter"
-	"io/ioutil"
+	"html/template"
 	"net/http"
+	"path"
 )
+
+type TemplateData struct {
+	Request  http.Request
+	DataJson string
+}
+
+var FuncMap = template.FuncMap{
+	"eq": func(a, b interface{}) bool {
+		return a == b
+	},
+}
 
 // This struct implements http.Handler but also prints the requests
 // in stdout.
@@ -38,15 +50,31 @@ func GetRouter() *negroni.Negroni {
 }
 
 func HomeHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	var dat []byte
-	dat, err := ioutil.ReadFile("public/index.html")
+	tmplPath := path.Join("views", "home.html")
+	tmpl, err := template.ParseFiles(tmplPath)
+	tmpl.Funcs(FuncMap) // Use the 'eq' function
+
 	if err != nil {
-		errChannel <- err
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	rw.Write(dat)
+
+	if err := tmpl.Execute(rw, TemplateData{*r, "test"}); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func SwitchesIndexHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	text := []byte("Hello")
-	rw.Write(text)
+	tmplPath := path.Join("views", "home.html")
+	tmpl, err := template.ParseFiles(tmplPath)
+	tmpl.Funcs(FuncMap) // Use the 'eq' function
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := tmpl.Execute(rw, TemplateData{*r, "test"}); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	}
 }
