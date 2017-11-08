@@ -1,5 +1,9 @@
 # Smartpie
 
+**Warning**: The following README described the desired state which is not yet reached.
+This project is still a work in progress. This warning will be removed as soon as
+the project reaches a "working" state.
+
 This is DIY Smart home platform that lets you replace switches to your house
 with WiFi enabled Arduinos (ESPduino). It consists of the following entities:
 
