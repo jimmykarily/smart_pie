@@ -1,0 +1,12 @@
+# All nodes can read their pin channels
+pattern read %u/pin/+
+
+# All nodes can write to the heartbeats
+# "topic" here only works for anonymous clients which are disabled.
+# "pattern" assumes there is a logged client so it works.
+pattern write heartbeats
+
+# admin user can read and write to any node pin channel
+user admin
+topic readwrite +/pin/+
+topic read heartbeats
