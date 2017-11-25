@@ -11,27 +11,37 @@ import (
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"os"
+	"strconv"
+	"strings"
 )
 
 type Node struct {
+	Name string
+	Pins []int
 }
 
 type NodeManager struct {
-	nodes      []Node
+	Nodes      map[string]Node
 	mqttClient MQTT.Client
 	logger     Logger
 }
 
 func NewNodeManager(brokerUri string, brokerUsername string, brokerPassword string) *NodeManager {
-	clientOptions := MQTT.NewClientOptions().
-		AddBroker(brokerUri).
-		SetClientID(brokerUsername).
-		SetUsername(brokerUsername).
-		SetPassword(brokerPassword)
+	clientOptions := MQTT.NewClientOptions().AddBroker(brokerUri)
 
-	// Create the manager to be able to user it's method as a callback
+	if brokerUsername != "" {
+		clientOptions = clientOptions.SetClientID(brokerUsername).
+			SetUsername(brokerUsername)
+	}
+
+	if brokerPassword != "" {
+		clientOptions = clientOptions.SetPassword(brokerPassword)
+	}
+
+	// Create the manager to be able to use its method as a callback
 	manager := &NodeManager{
 		logger: Logger{"Node Manager", os.Stdout},
+		Nodes:  make(map[string]Node),
 	}
 
 	clientOptions.SetDefaultPublishHandler(
@@ -41,18 +51,58 @@ func NewNodeManager(brokerUri string, brokerUsername string, brokerPassword stri
 	return manager
 }
 
+/*
+msg is something like this:
+	my_node: 1,2,3
+where 1,2,3 are the enabled pins and my_node is the name of the node. This
+method populates the Nodes array.
+*/
 func (m *NodeManager) heartbeatsCallback(client MQTT.Client, msg MQTT.Message) {
-	m.logger.Log(fmt.Sprintf("TOPIC: %s", msg.Topic()))
-	m.logger.Log(fmt.Sprintf("MSG: %s", msg.Payload()))
+	if msg.Topic() == "heartbeats" {
+		m.addNode(string(msg.Payload()))
+	} else {
+		m.logger.Log(fmt.Sprintf("Unhandled msg for topic: %s / %s", msg.Topic(), msg.Payload()))
+	}
+	fmt.Println(m.Nodes)
 }
 
-func (m *NodeManager) Subscribe() {
+func (m *NodeManager) addNode(msg string) {
+	msgParts := strings.Split(msg, ":")
+
+	var node Node
+	var exists bool
+
+	if node, exists = m.Nodes[msgParts[0]]; !exists {
+		node = Node{Name: msgParts[0]}
+	}
+
+	var pins = []int{}
+
+	for _, i := range strings.Split(msgParts[1], ",") {
+		j, err := strconv.Atoi(strings.TrimSpace(i))
+		if err != nil {
+			panic(err)
+		}
+		pins = append(pins, j)
+	}
+
+	node.Pins = pins
+	m.Nodes[msgParts[0]] = node
+}
+
+func (m *NodeManager) Subscribe(channels []string) {
+
 	if token := m.mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
-	if token := m.mqttClient.Subscribe("heartbeats", 0, nil); token.Wait() && token.Error() != nil {
-		fmt.Println(token.Error())
-		os.Exit(1)
+	for _, channel := range channels {
+		// TODO: Use SubscribeMultiple here
+		if token := m.mqttClient.Subscribe(channel, 0, func(client MQTT.Client, msg MQTT.Message) {
+			m.heartbeatsCallback(client, msg)
+		}); token.Wait() && token.Error() != nil {
+			m.logger.Log(token.Error().Error())
+			os.Exit(1)
+		}
 	}
 }

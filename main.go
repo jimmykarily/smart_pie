@@ -10,6 +10,7 @@ var mqttBrokerUri = os.Getenv("MQTT_BROKER_URI")
 var mqttUsername = os.Getenv("MQTT_USERNAME")
 var mqttPassword = os.Getenv("MQTT_PASSWORD")
 var logger = Logger{"Main", os.Stdout}
+var nodeManager *NodeManager
 
 // If something is written in the errChannel, the program prints the error and
 // exits.
@@ -30,6 +31,11 @@ func SetupVars() error {
 		os.Exit(1)
 	}
 
+	if mqttBrokerUri == "" {
+		logger.Log("MQTT_BROKER_URI not set")
+		os.Exit(1)
+	}
+
 	return nil
 }
 
@@ -39,11 +45,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	nodeManager = NewNodeManager(mqttBrokerUri, mqttUsername, mqttPassword)
+	nodeManager.Subscribe([]string{"heartbeats"})
+
 	// The web server
 	go StartServer(Logger{"Server", os.Stdout}, errChannel)
-
-	nodeManager := NewNodeManager(mqttBrokerUri, mqttUsername, mqttPassword)
-	nodeManager.Subscribe()
 
 	for {
 		select {
