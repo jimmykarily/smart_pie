@@ -28,7 +28,7 @@ var _ = Describe("NodeManager", func() {
 		It("adds a node based on the message", func() {
 			manager.Subscribe([]string{"heartbeats"})
 
-			if token := client.Publish("heartbeats", 0, false, "mynode:4,3,1"); token.Wait() && token.Error() != nil {
+			if token := client.Publish("heartbeats", 0, false, "mynode:4/up,3/up,1/down"); token.Wait() && token.Error() != nil {
 				Fail(token.Error().Error())
 			}
 
@@ -37,7 +37,7 @@ var _ = Describe("NodeManager", func() {
 			time.Sleep(50 * time.Millisecond)
 
 			Expect(manager.Nodes["mynode"].Name).To(Equal("mynode"))
-			Expect(manager.Nodes["mynode"].Pins).To(Equal([]int{4, 3, 1}))
+			Expect(manager.Nodes["mynode"].Pins).To(Equal(map[int]bool{4: true, 3: true, 1: false}))
 		})
 	})
 })

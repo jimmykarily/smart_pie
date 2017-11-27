@@ -17,7 +17,7 @@ import (
 
 type Node struct {
 	Name string
-	Pins []int
+	Pins map[int]bool
 }
 
 type NodeManager struct {
@@ -66,6 +66,12 @@ func (m *NodeManager) heartbeatsCallback(client MQTT.Client, msg MQTT.Message) {
 	fmt.Println(m.Nodes)
 }
 
+/*
+A heartbeat message looks something like this:
+my_node:1/up,2/down,4/up
+
+and should result in a node with name "my_node" and Pins {1: true, 2: down, 4:true}
+*/
 func (m *NodeManager) addNode(msg string) {
 	msgParts := strings.Split(msg, ":")
 
@@ -76,14 +82,17 @@ func (m *NodeManager) addNode(msg string) {
 		node = Node{Name: msgParts[0]}
 	}
 
-	var pins = []int{}
+	pins := make(map[int]bool)
 
-	for _, i := range strings.Split(msgParts[1], ",") {
-		j, err := strconv.Atoi(strings.TrimSpace(i))
+	for _, pinInfo := range strings.Split(msgParts[1], ",") {
+		var data []string = strings.Split(pinInfo, "/")
+
+		pinNumber, err := strconv.Atoi(strings.TrimSpace(data[0]))
 		if err != nil {
 			panic(err)
 		}
-		pins = append(pins, j)
+
+		pins[pinNumber] = (data[1] == "up")
 	}
 
 	node.Pins = pins

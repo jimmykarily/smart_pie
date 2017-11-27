@@ -113,7 +113,13 @@ String enabled_ports_string() {
 
   strcpy(text, "");
   for(int i=0; i<number_of_enabled_pins; i++) {
-    strcat(text, itoa(ENABLED_PINS[i], pin_num, 10));
+    itoa(ENABLED_PINS[i], pin_num, 10);
+    strcat(text, pin_num);
+    if(digitalRead(ENABLED_PINS[i])){
+      strcat(text, "/up");
+    } else {
+      strcat(text, "/down");
+    }
     // Skip the comma for the last element
     if(i != number_of_enabled_pins - 1){
       strcat(text, ",");
