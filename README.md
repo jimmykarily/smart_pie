@@ -40,10 +40,20 @@ You will have to add the ESP8266 support (https://github.com/esp8266/Arduino#ins
 
 ## Admin node
 
-This is a web application written in Go. To compile it you will need a working
-Go development enviroenment.
+This is a web application written in Go. To compile it you will need a working Go development environment.
 
-TODO: Add details on how to build and run and deploy the application.
+If you are planning to run the admin application on a RasberryPi you can use something like
+
+```
+CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -a -ldflags '-extldflags "-static"' .
+docker build -t smart_pie .
+```
+This will create a statically linked executable for Rasberry Pi (v3) and will then create a docker image
+which you can run on your Rasberry using something like this:
+
+```
+docker run -dit --restart unless-stopped -e "MQTT_USERNAME=your_admin_username" -e "MQTT_PASSWORD=your_admin_password" -e "MQTT_BROKER_URI=tcp://the_ip_of_your_broker:1883"  -p 8080:8080 smart_pie
+```
 
 ## Mosquitto
 
