@@ -115,3 +115,12 @@ func (m *NodeManager) Subscribe(channels []string) {
 		}
 	}
 }
+
+func (m *NodeManager) SendMessage(channel string, message string) {
+	m.logger.Log(channel)
+	m.logger.Log(message)
+	if token := m.mqttClient.Publish(channel, 0, false, message); token.Wait() && token.Error() != nil {
+		m.logger.Log(token.Error().Error())
+		os.Exit(1)
+	}
+}

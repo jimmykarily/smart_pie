@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/codegangsta/negroni"
 	"github.com/julienschmidt/httprouter"
 	"html/template"
@@ -11,6 +13,12 @@ import (
 type TemplateData struct {
 	Request  http.Request
 	DataJson string
+}
+
+type SwitchUpdateData struct {
+	node    string
+	pin     int
+	checked bool
 }
 
 var FuncMap = template.FuncMap{
@@ -36,6 +44,7 @@ func GetRouter() *negroni.Negroni {
 	r := httprouter.New()
 	r.GET("/", HomeHandler)
 	r.GET("/switches", SwitchesIndexHandler)
+	r.POST("/switches", SwitchesUpdateHandler)
 	//r.POST("/switches", SwitchesCreateHandler)
 	//r.GET("/switches/:id", SwitchesShowHandler)
 	//r.PUT("/switches/:id", SwitchUpdateHandler)
@@ -64,17 +73,34 @@ func HomeHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 }
 
+func SwitchesUpdateHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	var action string
+	r.ParseForm()
+	if r.Form["checked"][0] == "true" {
+		action = "high"
+	} else {
+		action = "low"
+	}
+	message := fmt.Sprintf("%s/pin/%s", r.Form["node"][0], r.Form["pin"][0])
+	nodeManager.SendMessage(message, action)
+}
+
 func SwitchesIndexHandler(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	tmplPath := path.Join("views", "home.html")
-	tmpl, err := template.ParseFiles(tmplPath)
-	tmpl.Funcs(FuncMap) // Use the 'eq' function
+	/*
+		tmplPath := path.Join("views", "home.html")
+		tmpl, err := template.ParseFiles(tmplPath)
+		tmpl.Funcs(FuncMap) // Use the 'eq' function
 
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	if err := tmpl.Execute(rw, TemplateData{*r, "test"}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-	}
+		if err := tmpl.Execute(rw, TemplateData{*r, "test"}); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+	*/
+
+	nodes := nodeManager.Nodes
+	json.NewEncoder(rw).Encode(nodes)
 }
